@@ -1,0 +1,9 @@
+- "left reads":
+  - "/Users/weeblesthe2nd/Desktop/marinum_fastp_final/spades_final/corrected/cleaned_100.0_0.cor.fastq.gz"
+  "number": !!int "1"
+  "orientation": "fr"
+  "right reads":
+  - "/Users/weeblesthe2nd/Desktop/marinum_fastp_final/spades_final/corrected/cleaned_200.0_0.cor.fastq.gz"
+  "single reads":
+  - "/Users/weeblesthe2nd/Desktop/marinum_fastp_final/spades_final/corrected/cleaned__unpaired00.0_0.cor.fastq.gz"
+  "type": "paired-end"

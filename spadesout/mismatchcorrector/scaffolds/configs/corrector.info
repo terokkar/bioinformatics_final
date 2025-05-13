@@ -1,0 +1,7 @@
+"bwa": "/Users/weeblesthe2nd/miniconda3/envs/genomeanalysis/bin/spades-bwa"
+"dataset": "/Users/weeblesthe2nd/Desktop/marinum_fastp_final/spades_final/input_dataset.yaml"
+"log_filename": "log.properties"
+"max_nthreads": !!int "10"
+"output_dir": "/Users/weeblesthe2nd/Desktop/marinum_fastp_final/spades_final/mismatch_corrector/scaffolds"
+"strategy": "mapped_squared"
+"work_dir": "/Users/weeblesthe2nd/Desktop/marinum_fastp_final/spades_final/tmp/corrector__ip4v_fb"

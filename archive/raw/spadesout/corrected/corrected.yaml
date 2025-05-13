@@ -1,0 +1,9 @@
+- "left reads":
+  - "/Users/weeblesthe2nd/Desktop/M_marinum/spadesout/corrected/SRR32309086_100.0_0.cor.fastq.gz"
+  "number": !!int "1"
+  "orientation": "fr"
+  "right reads":
+  - "/Users/weeblesthe2nd/Desktop/M_marinum/spadesout/corrected/SRR32309086_200.0_0.cor.fastq.gz"
+  "single reads":
+  - "/Users/weeblesthe2nd/Desktop/M_marinum/spadesout/corrected/SRR32309086__unpaired00.0_0.cor.fastq.gz"
+  "type": "paired-end"

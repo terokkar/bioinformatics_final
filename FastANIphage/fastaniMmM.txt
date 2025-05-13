@@ -1,0 +1,1 @@
+final_ass.fasta	GCF_000018345.1_ASM1834v1_genomic.fna	99.3252	1505	1512

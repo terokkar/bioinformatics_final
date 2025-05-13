@@ -1,0 +1,1 @@
+before_rr.fasta	GCF_000018345.1_ASM1834v1_genomic.fna	99.1753	1897	1995

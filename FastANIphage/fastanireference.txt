@@ -1,0 +1,1 @@
+final_ass.fasta	mmarinum_E11.fasta	98.801	1509	1512

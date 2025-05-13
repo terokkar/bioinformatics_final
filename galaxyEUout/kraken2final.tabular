@@ -1,0 +1,36 @@
+100.00	1252	0	R	1	root
+100.00	1252	0	R1	131567	  cellular organisms
+100.00	1252	0	D	2	    Bacteria
+ 99.84	1250	0	D1	1783272	      Terrabacteria group
+ 99.84	1250	0	P	201174	        Actinomycetota
+ 99.84	1250	0	C	1760	          Actinomycetes
+ 99.84	1250	0	O	85007	            Mycobacteriales
+ 99.84	1250	0	F	1762	              Mycobacteriaceae
+ 99.76	1249	0	G	1763	                Mycobacterium
+ 99.76	1249	214	G1	2993898	                  Mycobacterium ulcerans group
+ 76.92	963	539	S	1781	                    Mycobacterium marinum
+ 32.75	410	410	S1	216594	                      Mycobacterium marinum M
+  1.12	14	14	S1	1131442	                      Mycobacterium marinum E11
+  3.67	46	28	S	1809	                    Mycobacterium ulcerans
+  1.36	17	17	S1	1124626	                      Mycobacterium ulcerans subsp. shinshuense
+  0.08	1	1	S1	362242	                      Mycobacterium ulcerans Agy99
+  1.04	13	13	S	133549	                    Mycobacterium shottsii
+  0.88	11	9	S	265949	                    Mycobacterium pseudoshottsii
+  0.16	2	2	S1	1136880	                      Mycobacterium pseudoshottsii JCM 15466
+  0.16	2	0	S	261524	                    Mycobacterium liflandii
+  0.16	2	2	S1	459424	                      Mycobacterium liflandii 128FXT
+  0.08	1	0	G	1866885	                Mycolicibacterium
+  0.08	1	1	S	1534349	                  Mycolicibacterium helvum
+  0.08	1	0	P	2818505	      Myxococcota
+  0.08	1	0	C	32015	        Myxococcia
+  0.08	1	0	O	29	          Myxococcales
+  0.08	1	0	O1	80811	            Cystobacterineae
+  0.08	1	0	F	31	              Myxococcaceae
+  0.08	1	1	G	32	                Myxococcus
+  0.08	1	0	P	1224	      Pseudomonadota
+  0.08	1	0	C	28216	        Betaproteobacteria
+  0.08	1	0	O	80840	          Burkholderiales
+  0.08	1	0	F	75682	            Oxalobacteraceae
+  0.08	1	0	G	963	              Herbaspirillum
+  0.08	1	0	S	80842	                Herbaspirillum rubrisubalbicans
+  0.08	1	1	S1	1235827	                  Herbaspirillum rubrisubalbicans Os34

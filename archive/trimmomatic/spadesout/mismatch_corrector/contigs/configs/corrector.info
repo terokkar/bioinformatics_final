@@ -1,0 +1,7 @@
+"bwa": "/Users/weeblesthe2nd/miniconda3/envs/genomeanalysis/bin/spades-bwa"
+"dataset": "/Users/weeblesthe2nd/Desktop/M_marinum_clean/spadesout/input_dataset.yaml"
+"log_filename": "log.properties"
+"max_nthreads": !!int "10"
+"output_dir": "/Users/weeblesthe2nd/Desktop/M_marinum_clean/spadesout/mismatch_corrector/contigs"
+"strategy": "mapped_squared"
+"work_dir": "/Users/weeblesthe2nd/Desktop/M_marinum_clean/spadesout/tmp/corrector_dl3t218j"

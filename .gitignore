@@ -1,0 +1,11 @@
+*.fastq
+*.fasta
+*.fna
+*.fa
+*.fq
+*.gz
+*.bam
+*.sam
+*.vcf
+*.log
+*.tmp

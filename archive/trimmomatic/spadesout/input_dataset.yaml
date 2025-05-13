@@ -1,0 +1,7 @@
+- "left reads":
+  - "/Users/weeblesthe2nd/Desktop/M_marinum_clean/SRR32309086_1_paired.fastq"
+  "number": !!int "1"
+  "orientation": "fr"
+  "right reads":
+  - "/Users/weeblesthe2nd/Desktop/M_marinum_clean/SRR32309086_2_paired.fastq"
+  "type": "paired-end"

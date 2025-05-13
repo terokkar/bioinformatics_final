@@ -1,0 +1,3 @@
+Assembly,Name,Completeness,Contamination,Genome_Size,Total_Contigs,Max_Contig_Length,Contig_N50
+Untrimmed,untrimmed_scaffolds.fasta,100.0,1.72,7024447,2623,320090,124585
+Trimmed,scaffolds.fasta,99.99,1.44,6662919,2263,246543,75882

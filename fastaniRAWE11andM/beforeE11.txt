@@ -1,0 +1,1 @@
+before_rr.fasta	mmarinum_E11.fasta	98.4177	1882	1995

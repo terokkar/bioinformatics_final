@@ -1,0 +1,1110 @@
+Final Genome Assembly and Annotation Section Report by Holly Moffett
+Bioinformatics CSU Stanislaus Spring 2025 Dr. Van Laar
+Mycobacterium marinum
+5/14/2025
+
+#My original goal starting this project was to try bioinformatics tools we hadn't used in class. As time went on, my goal became cleaning the genome of contamination based on CheckM2 reports. Ultimately, my goal shifted to removing organismal contamination to better attribute an antibiotic resistant gene, found by CARD, to Mycobacterium marinum.
+#I achieved all my goals, though the CheckM2 goal was temporary.
+#The irony of my goal in trying to reduce contamination reported by CheckM2 is that while it was reduced through double trimming, filtering out the majority of the organismal contamination resulted in a higher level of contamination in CheckM2.
+
+~ ~ ~ ~ ~
+
+#Final results
+
+#I'm adding the final results to the top of my report because there is a lot of information below. My workflow isn't perfect by any means. I used a lot of new tools at different stages and had to backtrack to apply them to other parts of the report to get comparisons for my final analysis.
+
+#Data generated for each step is placed in its own folder inside archive. The data in the main folder is from the final assembly made after the second HiSAT run and final fastp.
+
+#Kraken2 Taxonomic Summary
+Step                     | Mycobacterium (%) | Pseudomonas (%)  | Unclassified (%)
+-------------------------|-------------------|------------------|-------------------
+Raw SRA Reads            | 0.00*             | 0.00*            | 99.92
+After Trimmomatic        | 95.22             | 0.88             | 3.43
+After fastp              | 54.71             | 44.90            | 0.04
+HISAT2 aligned reads     | 95.22             | 0.91             | 3.41
+HISAT2 strict filtered   | 99.76             | 0.08             | 0.00*
+*Category not present in the Kraken2 output file.
+
+#CheckM2 Quality Summary
+Step                       | Completeness (%) | Contamination (%)
+---------------------------|------------------|-------------------
+Raw SRA assembly           | 100.0            | 1.72
+After Trimmomatic          | 99.99            | 1.44
+After fastp                | 100.0            | 1.23
+HiSAT first run            | 100.0            | 1.29
+HiSAT second run (strict)  | 99.99            | 1.88
+
+#QUAST Assembly Statistics
+Step              | Total Length (bp) | N50
+------------------|-------------------|--------
+Raw               | 7,024,447         | 170,539
+Trimmomatic       | 6,662,919         | 77,685
+Fastp             | 6,405,805         | 59,596
+Final HISAT2      | 5,741,553         | 16,934
+
+#RAST Annotation Summary
+Date         | Name                 | Num Contigs | Size (bp) | Assembly Version
+-------------|----------------------|-------------|-----------|----------------------------
+2025-04-30   | Mycobacterium sp.    | 2290        | 6,660,710 | Raw SRA assembly
+2025-05-04   | Mycobacterium sp.    | 1184        | 6,404,275 | fastp (trimmed reads only)
+2025-05-06   | Mycobacterium sp.    | 1555        | 5,737,726 | HISAT2 (strict filtered)
+
+#Note: although CheckM2 reported increased read contamination after filtering, organism-level contamination was reduced as supported by data above. Additional comparisons done on raw assembly and final assembly are at the bottom of this report.
+
+#Data availability
+#All raw and processed files not used in the final analysis, including intermediate outputs and annotation results, are saved in the archive folder.
+
+~ ~ ~ ~ ~ Begin section report
+
+#Versions
+Quality Control & Trimming
+FastQC v0.12.1
+Trimmomatic v0.39
+fastp v0.23.4
+
+Read Filtering & Processing
+Kraken2 (Galaxy) v2.1.3+galaxy1
+Select Lines (Galaxy) v1.0.4
+Cut Columns (Galaxy) v1.0.2
+Filter Sequences by ID (Galaxy)0.2.9
+HiSAT2 v2.2.1
+samtools v1.21
+seqkit v2.10.0
+
+Assembly & Evaluation
+SPAdes v4.1.0
+ABySS v2.3.7
+QUAST v5.3.0
+CheckM2 (Galaxy) v1.0.2+galaxy1
+
+Genome Annotation
+Prokka v1.14.6
+DFAST v1.3.6
+RASTtk (live version as of 202-04-30)
+SEED Viewer v2.0
+Prodigal v2.6.3
+barrnap v0.9
+Protein-Protein BLAST 2.16.0+
+
+Resistance & Functional Analysis
+CARD 2023
+j v1.7.1 (for JSON parsing)
+
+Python Stack
+Python v3.13.2
+pandas v2.2.3
+Biopython v1.85
+matplotlib v3.10.1
+NumPy v2.2.5
+Seaborn v0.13.2
+
+#  >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>
+
+#Working with NCBI SRA raw reads.
+
+#  >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>
+
+#This command is to make a folder for FastQC output.
+mkdir fastqc_untrimmed
+
+#This command runs FastQC on the paired-end SRA NCBI reads with the resulting files place in the folder made in the previous command.
+fastqc SRR32309086_1.fastq SRR32309086_2.fastq -o fastqc_untrimmed
+
+#I didn't view the FastQC reports after generating them. Instead, I proceeded with assembly to examine the BLASTn results.
+
+#This command was used to perform genome assembly with SPAdes. 20 GB of RAM and 10 CPU threads were allocated for faster processing. *Note: careful was added to trimmed and filtered reads but not the raw SRA NCBI reads. Careful is listed here to reduce space when reporting SPAdes usage later in the report.
+spades.py \
+  -1 SRR32309086_1.fastq \
+  -2 SRR32309086_2 \
+  -o spadesout \
+  --careful \
+  --threads 10 \
+  --memory 20
+
+#This command was used to perform genome assembly with ABySS. The k-mer length was set to 96, 2 GB was allocated to the bash table process, and 10 threads were allocated for faster processing.
+abyss-pe name=assembly \
+  k=96 \
+  B=2G \
+  j=10 \
+  in='SRR32309086_1.fastq SRR32309086_2.fastq'
+
+#This command created a folder called abyssout and moved all files generated by abyss to it.
+mkdir abyssout
+mv assembly* abyssout/
+
+#This command ran QUAST to generate reports on the SPAdes and ABySS assemblies, saving the resulting reports in the 'quastspades' and 'quastabyss' folders, respectively.
+quast.py spadesout/scaffolds.fasta -o quastspades && quast.py abyssout/assembly-scaffolds.fa -o quastabyss
+
+#QUAST Assembly Comparison
+|---------------------------------------------------------------------------------------------------|
+| Metric                     | SPAdes         | ABySS          | Better                             |
+|----------------------------|----------------|----------------|------------------------------------|
+| # Contigs (>= 500 bp)      | 2623           | 828            | ABySS (fewer contigs)              |
+|---------------------------------------------------------------------------------------------------|
+| # Contigs (>= 50000 bp)    | 35             | 41             | ABySS (more long contigs)          |
+|---------------------------------------------------------------------------------------------------|
+| Largest Contig             | 328,060 bp     | 246,485 bp     | SPAdes (longer contig)             |
+|---------------------------------------------------------------------------------------------------|
+| Total Length               | 6,387,949 bp   | 6,364,335 bp   | SPAdes (slightly larger genome)    |
+|---------------------------------------------------------------------------------------------------|
+| N50                        | 156,838 bp     | 54,767 bp      | SPAdes (higher N50)                |
+|---------------------------------------------------------------------------------------------------|
+| N90                        | 29,969 bp      | 12,351 bp      | SPAdes (higher N90)                |
+|---------------------------------------------------------------------------------------------------|
+| L50                        | 14             | 35             | SPAdes (lower L50)                 |
+|---------------------------------------------------------------------------------------------------|
+| # N’s per 100 kbp          | 29.74          | 5.05           | ABySS (fewer gaps)                 |
+|---------------------------------------------------------------------------------------------------|
+| GC Content (%)             | 65.69%         | 65.55%         | Similar                            |
+|---------------------------------------------------------------------------------------------------|
+
+#Overall, SPAdes produced a more contiguous assembly (higher N50, longer contigs), while ABySS produced fewer total contigs and fewer gaps. SPAdes was chosen for further downstream analysis.
+
+#This command runs DFAST on the SPAdes assembly to annotate the genome and saved the results to the folder dfast_output.
+dfast --genome spadesout/scaffolds.fasta --out dfast_output
+
+#RAST and CARD websites were also utilized for gene annotation. However, because I decided to trim later on, DFAST and RAST were not analyzed.
+#The CARD report identified the presence of the rbpA gene, which is associated with resistance to rifamycin antibiotics.
+
+#This command runs Barrnap to identify rRNA genes in the SPAdes assembly. The '--kingdom bac' flag specifies bacterial rRNAs, and the results are saved as 'rRNAsequences.gff'.
+barrnap --kingdom bac spadesout/scaffolds.fasta > rRNAsequences.gff
+
+#This command uses bedtools to extract rRNA sequences from the SPAdes assembly based on the Barrnap GFF file. The output is saved as 'rRNAsequences.fasta'.
+bedtools getfasta -fi spadesout/scaffolds.fasta -bed rRNAsequences.gff -fo rRNAsequences.fasta
+
+#This command moves all rRNA files generated to the folder rRNAinfo.
+mkdir rRNAinfo
+mv rRNAs* rRNAinfo/
+
+#BLASTn (default settings) results summary for extracted rRNA sequences:
+# - Nodes 1 and 8 matched Pseudomonas species
+# - Nodes 2, 3, 5, and 6 matched Mycobacterium marinum
+# - Nodes 4 and 7 matched Mycobacterium avium
+#It should be noted that these were the top hits within their node results, but there were many other species present.
+
+#Because of the contamination seen in the BLASTn results, CheckM2 was run via Galaxy EU on the assembly generated from raw reads.
+#I initially attempted to install and run CheckM2 locally through Terminal, but was unsuccessful.
+#Completeness was reported at 100%, and contamination at 1.72%.
+
+#Later analysis of raw assembly:
+#Kraken2, via Galaxy EU, report showed 99.92% unclassified and various other species near < 0.1%.
+#This supports the chaotic BLASTn results from assembled raw reads.
+#It should be noted that this Kraken2 report was generated near the end of my report to get a baseline of where the reads were at for each step.
+
+#At this point, I decided to trim the raw reads to reduce contamination and improve overall sequence quality. I was initially hesitant due to over-trimming during the microbiome tutorial, resulting in unusable data.
+
+#Here begins the second phase of my genome assembly and analysis.
+
+#  >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>
+#  >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>
+
+#Trimming raw reads, reassembly and analysis.
+
+#  >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>
+#  >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>
+
+#Trimmomatic was run six times, but each attempt produced corrupted .fastq files. The -verbose flag was added to help troubleshoot the issue, but it was not a recognized command by Trimmomatic. The command was then edited to include a log report (> trimmomatic_log.txt 2>&1) in an attempt to identify the issue(s). The failures were ultimately due to cloud sync interfering with file writing. Running Trimmomatic in a local (non-cloud) folder solved the problem.
+
+#Here are the commands used.
+
+#This command trims paired-end raw reads using Trimmomatic to improve quality for downstream analysis. It removes adapter/primer sequences, trims low-quality regions, and discards short or unreadable reads.
+trimmomatic PE \
+  -threads 4 \
+  SRR32309086_1.fastq SRR32309086_2.fastq \
+  SRR32309086_1_paired.fastq SRR32309086_1_unpaired.fastq \
+  SRR32309086_2_paired.fastq SRR32309086_2_unpaired.fastq \
+  ILLUMINACLIP:TruSeq3-PE.fa:2:30:10 \
+  HEADCROP:20 \
+  LEADING:3 TRAILING:3 \
+  SLIDINGWINDOW:4:20 \
+  MINLEN:50
+
+-threads 4 = 4 CPU threads to speed up processing 
+Input file names: SRR32309086_1.fastq and SRR32309086_2.fastq
+Output file names: SRR32309086_1_paired.fastq, SRR32309086_1_unpaired.fastq, SRR32309086_2_paired.fastq, and SRR32309086_2_unpaired.fastq 
+ILLUMINACLIP:TruSeq3-PE.fa:2:30:10: Illumina adapter trimming 
+ILLUMINACLIP:TruSeq3-PE.fa:2:30:10 trims adapters and removes any adapter contamination from both ends of paired reads
+HEADCROP:20: removes the first 20 bases from each read
+LEADING:3 TRAILING:3: removes bases from the start and end if their quality score is below 3
+SLIDINGWINDOW:4:20: 4-base window that trims when average quality is below 20
+MINLEN:50: removes any reads shorter than 50 bp
+
+#The first two Trimmomatic runs produced one corrupted output file each (*_paired.fastq or *_unpaired.fastq) where file size decreased over time, likely due to a write failure or crash. To address this, all output files were deleted before re-running Trimmomatic with the -verbose flag enabled to monitor progress and help prevent further corruption.
+trimmomatic PE -verbose \
+  -threads 4 \
+  SRR32309086_1.fastq SRR32309086_2.fastq \
+  SRR32309086_1_paired.fastq SRR32309086_1_unpaired.fastq \
+  SRR32309086_2_paired.fastq SRR32309086_2_unpaired.fastq \
+  ILLUMINACLIP:TruSeq3-PE.fa:2:30:10 \
+  HEADCROP:20 \
+  LEADING:3 TRAILING:3 \
+  SLIDINGWINDOW:4:20 \
+  MINLEN:50
+
+#Unfortunately verbose isn't a command recognized by Trimmomatic. Another run was done with logging to check for the source of any errors.
+trimmomatic PE \
+  -threads 4 \
+  SRR32309086_1.fastq SRR32309086_2.fastq \
+  SRR32309086_1_paired.fastq SRR32309086_1_unpaired.fastq \
+  SRR32309086_2_paired.fastq SRR32309086_2_unpaired.fastq \
+  ILLUMINACLIP:TruSeq3-PE.fa:2:30:10 \
+  HEADCROP:20 \
+  LEADING:3 TRAILING:3 \
+  SLIDINGWINDOW:4:20 \
+  MINLEN:50 \
+  > trimmomatic_log.txt 2>&1
+
+#This Trimmomatic run completed but the adapter file (TruSeq3-PE.fa) was missing, so adapter trimming via ILLUMINACLIP was not performed. After downloading the correct adapter file, Trimmomatic was re-run to ensure both primer and adapter sequences were removed. This file was saved as TruSeq3-PE.fa. While the missing adapter file was initially suspected as the source of corruption, it was later ruled out.
+trimmomatic PE \
+  -threads 4 \
+  SRR32309086_1.fastq SRR32309086_2.fastq \
+  SRR32309086_1_paired.fastq SRR32309086_1_unpaired.fastq \
+  SRR32309086_2_paired.fastq SRR32309086_2_unpaired.fastq \
+  ILLUMINACLIP:TruSeq3-PE.fa:2:30:10 \
+  HEADCROP:20 \
+  LEADING:3 TRAILING:3 \
+  SLIDINGWINDOW:4:20 \
+  MINLEN:50 \
+  > trimmomatic_log.txt 2>&1
+
+#The command was run with adapter information but it resulted in more corrupted files both times. It's possible the cloud was interrupting Trimmomatic, so a folder was created off the cloud in order to run Trimmomatic. It was successful and the folder was moved to the desktop and onto the cloud.
+
+#This command creates a local folder outside of iCloud.
+mkdir -p ~/Documents/M_marinum_clean
+cd ~/Documents/M_marinum_clean
+
+#This command was used to copy files.
+cp ~/Desktop/M_marinum/SRR32309086_*.fastq .
+cp ~/Desktop/M_marinum/TruSeq3-PE.fa .
+
+#This command was for a clean local re-run of Trimmomatic.
+trimmomatic PE \
+  -threads 4 \
+  SRR32309086_1.fastq SRR32309086_2.fastq \
+  SRR32309086_1_paired.fastq SRR32309086_1_unpaired.fastq \
+  SRR32309086_2_paired.fastq SRR32309086_2_unpaired.fastq \
+  ILLUMINACLIP:TruSeq3-PE.fa:2:30:10 \
+  HEADCROP:20 \
+  LEADING:3 TRAILING:3 \
+  SLIDINGWINDOW:4:20 \
+  MINLEN:50 \
+  > trimmomatic_log.txt 2>&1
+
+#Genome assembly was performed with SPAdes and ABySS with commands listed earlier in this report. The flag --careful was added to the SPAdes command in order to reduce errors during assembly.
+
+#QUAST was run on SPAdes and ABySS assemblies for comparison.
+#SPAdes had much longer contigs (higher N50, bigger max contig, lower L50).
+#More high-quality contigs ≥50 kb in SPAdes (46 vs. 0).
+#Lower gap content in SPAdes (# N's per 100 kbp is lower).
+#SPAdes: 46 contigs ≥50,000 bp
+#ABySS: 0 contigs ≥50,000 bp
+
+#SPAdes wins.
+
+#CheckM2 installation was attempted through Terminal, but it requires Python 3.10 and my system is running Python 3.13. I tried to install it in its own environment but this didn't work.
+#I ran into the same compatibility issue during my first genome section report but had forgotten.
+#To compare genome quality between my original untrimmed and trimmed SPAdes assemblies, I’ll use Galaxy EU to run CheckM2 instead.
+
+#CheckM2 completeness for assembled Trimmomatic trimmed reads was 99.99%. Contamination for assembled Trimmomatic reads was 1.44%.
+
+#CheckM2 results for untrimmed and trimmed SPAdes assemblies.
+| Metric                  | Untrimmed        | Trimmed            |
+|-------------------------|------------------|--------------------|
+| Completeness (%)        | 100.00           | 99.99              |
+|-------------------------|------------------|--------------------|
+| Contamination (%)       | 1.72             | 1.44               |
+|-------------------------|------------------|--------------------|
+| Genome Size (bp)        | 7,024,447        | 6,662,919          |
+|-------------------------|------------------|--------------------|
+| GC Content              | 0.65             | 0.65               |
+|-------------------------|------------------|--------------------|
+| Total CDSs              | 8,079            | 7,511              |
+|-------------------------|------------------|--------------------|
+| Average Gene Length     | 259.39           | 265.05             |
+|-------------------------|------------------|--------------------|
+| Total Contigs           | 2,623            | 2,263              |
+|-------------------------|------------------|--------------------|
+| Max Contig Length (bp)  | 320,090          | 246,543            |
+|-------------------------|------------------|--------------------|
+| Contig N50 (bp)         | 124,585          | 75,882             |
+
+#rRNA was extracted with Barrnap and 16S was run through BLASTn. 5/7 nodes returned top Mycobacterium marinum as top hit, while 2/7 nodes were Pseudomonas.
+
+#Though completeness is slightly reduced in the trimmed assembly, contamination is reduced by 0.28%, genome size more closely matches that of M. marinum according to NIH, and average gene length increased. All of these factors, along with improved BLASTn results, lead to the conclusion that trimming was a good choice for downstream analysis.
+
+🐍 💻 🧠 🔢 🛠️ 📊
+# Python side quest
+# This was run before filtering. As a result of this side quest, I decided to trim the reads more.
+
+#The script used in this side quest created visualizations of the post-trim (Trimmomatic) .fastq files for quality analysis.
+
+#Biopython: reads and extracts sequences, quality scores, and identifiers from .fastq files.
+Identifiers start with @ in .fastq files and help programs maintain the read structure in paired-end sequencing. Basically, they're like barcodes for tracking individual sequencing reads.
+
+#NumPy and Seaborn: handle quality scores and generate boxplots for PHRED score distribution visualization.
+
+#matplotlib: used for plotting (boxplot, histograms, line plots, etc). Within the Python script, handles sizing and labelling of plots.
+
+#Together matplotlib gives full control over how the plots are organized and Seaborn polishes them.
+
+~ ~ ~ ~ Python visualization and trimming with fastp ~ ~ ~ ~
+
+#The visualizations generated through Python show good quality for forward reads. A small trim near the end to remove lower quality reads will be performed with fastp.
+#Reverse read quality is mostly good, but the quality drops significantly near the tail end. Fastp will be used to trim more of the end from the reverse reads.
+#Because I'm hesitant to trim (post trim stress disorder; thanks microbiome tutorial), I thought forward reads could move forward without it. However, both reads must be run through fastp in order to maintain proper pairing. This is essential for paired-end sequencing and subsequent genome assembly.
+
+#FastQC was a great starting point for trying out new bioinformatics tools. It gave me a good snapshot of the raw SRA read quality after downloading and helped guide the trimming process. However, the FastQC report wasn’t customizable like the visualizations I generated through Python. In the end, both FastQC and Python complemented each other and helped me reach informed decisions in the analysis process.
+
+#This command installs fastp (within genomeanalysis environment).
+conda install -c bioconda fastp
+
+#fastp
+#This command performs trimming with fastp
+--trim_tail1 5 → Trims the last 5 bp from forward reads
+--trim_tail2 25 → Trims the last 25 bp from reverse reads
+--length_required 50 → Filters out reads shorter than 50 bp after trimming
+--html fastp_report.html → Generates an interactive report viewable in a browser
+--json fastp_report.json → Creates a structured summary for future reference
+-o/-O → Output files for forward and reverse trimmed reads
+--thread 4 → Utilizes 4 CPU threads for faster execution
+gunzip -f → Unzips the output files, force-overwriting if files already exist
+
+fastp \
+  -i SRR32309086_1_paired.fastq \
+  -I SRR32309086_2_paired.fastq \
+  -o second_trim_1.fastq.gz \
+  -O second_trim_2.fastq.gz \
+  --trim_tail1 5 \
+  --trim_tail2 25 \
+  --length_required 50 \
+  --html fastp_report.html \
+  --json fastp_report.json \
+  --thread 4
+
+gunzip -f second_trim_1.fastq.gz
+gunzip -f second_trim_2.fastq.gz
+
+#The cloud corrupted the files so a folder off the cloud was made.
+cd ~
+mkdir genome_trim_local
+cd genome_trim_local
+
+#Fastq files were copied into that folder and the fastp command above was run. The folder was then moved to the desktop and on the cloud.
+mv ~/genome_trim_local ~/Desktop/
+
+#I had hoped I wouldn't run into the same issue as I had with Trimmomatic, but no dice. Because this has happened twice, I've come to the conclusion that trimming software should be run off the cloud.
+
+#Trimming with fastp resulted in files 400 MB smaller than the Trimmomatic files. While worrisome to me, as an inexperienced biology student, the Trimmomatic files are saved and can be reverted back to if needed.
+For peace of mind, and to avoid wasting time with unusable reads, SPAdes assembly was run on fastp .fastq files. Barnnap was also run so I could BLAST the 16S rRNA.
+spades.py -1 second_trim_1.fastq -2 second_trim_2.fastq -o spadesout
+
+barrnap --kingdom bac spadesout/scaffolds.fasta > rRNAsequences.gff
+bedtools getfasta -fi spadesout/scaffolds.fasta -bed rRNAsequences.gff -fo rRNAsequences.fasta
+mkdir rRNA_test_after_fastq
+mv rRNAsequences.* rRNA_test_after_fastq/
+
+#The good news is that BLASTn with default settings was successful and shows M. marinum for 6/7 nodes. This is an improvement. However, that 7th node is still Pseudomonas.
+Because of this successful run, I'm going to try to install CheckM2 in its own environment to see what the contamination is now after two trims and before Kraken2 and filtering.
+
+#Attempted to install CheckM2 in its own conda environment, as well as through Python later, but it was unsuccessful. Ran CheckM2 through Galaxy Europe to see contamination after additional trimming.
+
+#CheckM2 for fastp trim:
+100% complete
+1.23% contamination
+
+#Phred score (Q) = –10 × log₁₀(error probability)
+
+#After trimming a new folder was created for this second Python side quest.
+#The Python script was copied and edited to run on fastp trimmed fastq files.
+#This was run in the kraken2 environment.
+#python fastq_qc.py
+
+#The forward reads are consistent and don't drop below Phred of 36 (~99.975% accuracy of base calling). Interestingly, the reverse reads are greatly improved and don't drop below a Phred score of 31 (~99.9% accuracy). However, they are more chaotic across the board.
+#Based on Phred, and the ~400 MB reduction from fastp trimming, no further trimming will be done.
+
+#  >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>
+#  >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>
+#  >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>
+
+#Kraken2, failed filter, HiSAT and SAMtools.
+
+#  >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>
+#  >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>
+#  >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>   >><(((º>
+
+~ ~ ~ ~ ~ Installing Kraken2 (note: this process was halted because of database size and Galaxy EU was used for taxonomic analysis)
+
+#KRAKEN2
+
+#Kraken2 was having issues in environment genomeanalysis, like CheckM2, and wouldn't download.
+
+#Installing Kraken2
+#Kraken2 had conflicts in the 'genomeanalysis' environment and failed to install.
+
+#This command creates a new environment called 'kraken2' and installs Kraken2.
+#The '-c conda-forge' flag ensures that any additional required support libraries are included.
+conda create -n kraken2 -c bioconda -c conda-forge kraken2
+conda activate kraken2
+
+#This command activates Kraken2 environment.
+conda activate kraken2
+
+#This command downloads and builds the standard Kraken2 database (~100 GB). This includes bacteria, archaea, and viral genomes from RefSeq.
+kraken2-build --standard --db kraken2_db
+
+#Halted progress at 47 GB. To be continueded.
+
+~ ~ ~ ~ ~
+
+#Kraken2 via Galaxy EU was used to classify contigs from the SPAdes-assembled genome using the Standard-Full RefSeq database (v2022-06-07). Scientific names were included in the output for species-level interpretation.
+
+#Kraken2 Galaxy Eu settings:
+#Paired
+#Print scientific names instead of just taxids: Yes
+#Split classified and unclassified outputs?: Yes
+#Print a report with aggregrate counts/clade to file: Yes
+#Select a Kraken2 database: Prebuilt Refseq indexes: PlusPF (Standard plus protozoa and fungi) # (Version: 2024-01-12 - Downloaded: 2024-07-15T185612Z)
+#All others left as default
+
+#Mycobacterium content in reads.
+54.71	1238	0	G	1763	                Mycobacterium
+
+#Note significant contamination with Pseudomonadota. This supports the contamination seen in BLASTn results.
+44.9	1016	1	P	1224	      Pseudomonadota
+
+#With Galaxy EU used "Select lines that match an expression" program to isolate Mycobacterium reads. The following NCBI TaxIDs from the Kraken2 report were used as the matching pattern:
+1763|2993898|1781|216594|1131442|1809|1124626|362242|133549|265949|1136880|77643|482462|2642494|2675523
+
+#These are the organisms included from the Kraken2 report. It's entirely possible I'll filter again just for Mycobacterium marinum, but for now I want to stay conservative.
+                Mycobacterium
+                  Mycobacterium ulcerans group
+                    Mycobacterium marinum
+                      Mycobacterium marinum M
+                      Mycobacterium marinum E11
+                    Mycobacterium ulcerans
+                      Mycobacterium ulcerans subsp. shinshuense
+                      Mycobacterium ulcerans Agy99
+                    Mycobacterium shottsii
+                    Mycobacterium pseudoshottsii
+                      Mycobacterium pseudoshottsii JCM 15466
+                  Mycobacterium tuberculosis complex
+                  Mycobacterium dioxanotrophicus
+                  unclassified Mycobacterium
+                    Mycobacterium sp. DL440
+
+#The Kraken2 output files were saved and placed in a Galaxy EU output folder.
+
+#The next program in Galaxy EU used is "Cut columns from a table". This is to extract read IDs (column 2; c2) from the filtered Kraken2 report. This produced a list of all reads classified as Mycobacterium. This is the last step before filtering FASTQ reads.
+
+#The program "Filter sequences by ID from a tabular file" was run on each trimmed read with the 130 tabular file. Only positive matches were generated as negative matches, contamination, aren't needed for further analysis.
+
+#These are the sizes of the resulting reads.
+R1 669 KB
+R2 571 KB
+
+#Output files changed from .fastqsanger to .fastq. These will be assembled with SPAdes to make sure they are usable and then filtering for just Mycobacterium marinum will be performed. Files saved as 1_firstfilter.fastq and 2_firstfilter.fastq.
+
+#Assembly failed.
+
+#Filtering must have been too aggressive. Neither SPAdes or ABySS could assemble. Instead of analyzing the filtered .fastq, I went back to the filtering drawing board. There were other organisms listed in the Kraken2 report that will be included. Anything below Mycobacterium will not be included. Hopefully whatever results can be assembled.
+1	root
+131567	  cellular organisms
+2	    Bacteria
+1783272	      Terrabacteria group
+201174	        Actinomycetota
+1760	          Actinomycetes
+85007	            Mycobacteriales
+1762	              Mycobacteriaceae
+1763	                Mycobacterium
+2993898	                  Mycobacterium ulcerans group
+1781	                    Mycobacterium marinum
+216594	                      Mycobacterium marinum M
+1131442	                      Mycobacterium marinum E11
+1809	                    Mycobacterium ulcerans
+1124626	                      Mycobacterium ulcerans subsp. shinshuense
+362242	                      Mycobacterium ulcerans Agy99
+133549	                    Mycobacterium shottsii
+265949	                    Mycobacterium pseudoshottsii
+1136880	                      Mycobacterium pseudoshottsii JCM 15466
+77643	                  Mycobacterium tuberculosis complex
+482462	                  Mycobacterium dioxanotrophicus
+2642494	                  unclassified Mycobacterium
+2675523	                    Mycobacterium sp. DL440
+
+#This was used:
+1763|2993898|1781|216594|1131442|1809|1124626|362242|133549|265949|1136880|77643|482462|2642494|2675523|131567|1|2|1783272|201174|1760|85007|1762
+
+#Assembly failed again.
+
+#Pseudomonadota and related taxons had to be included because assembly was unsuccessful. Other contributors to the genome were left out.
+44.9	1016	1	P	1224	      Pseudomonadota
+43.08	975	0	C	1236	        Gammaproteobacteria
+40.48	916	0	O	72274	          Pseudomonadales
+40.48	916	0	F	135621	            Pseudomonadaceae
+40.48	916	326	G	286	              Pseudomonas
+
+#Input
+1763|2993898|1781|216594|1131442|1809|1124626|362242|133549|265949|1136880|77643|482462|2642494|2675523|131567|1|2|1783272|201174|1760|85007|1762|1224|1236|72274|135621|286
+
+#Unfortunately, this didn't work either. Assembly failed.
+
+#Backtracking now to assembly with fastp trimmed .fastq. From there I will try to locate the rbpA gene and find out if it's Mycobacterium or Pseudomonas.
+
+# Unsurprisingly, SPAdes outperformed ABySS again.
+
+#Although I generated data after SPAdes, with BLAST, CARD, and other tools, I decided not to include it in these notes because I kept working on cleaning the reads. After speaking with Dr. Van Laar, I aligned and filtered my reads using a Bash script she provided and commands for HiSAT and SamTools from the Transcriptomics module. This approach was successful and is documented below.
+#A tool I would like to try in the future is KrakenTools when the Kraken2 database is fully downloaded onto my computer.
+
+~ ~ ~ ~ ~
+
+#HiSAT
+#Downloaded reference Mycobacterium marinum genome from NCBI (GCF_000723425.2_E11_genomic.fna).
+
+#Edited Bash .sh file provided by Dr. Van Laar:
+
+~ Start Bash
+
+#!/bin/bash
+
+# Path to indexed Mycobacterium marinum genome
+MMARINUM_INDEX="mmarinum_E11_index"  # Update if your index prefix is named differently
+
+# Loop through paired-end files
+for fq1 in *_1.fastq; do
+    base=$(basename "$fq1" _1.fastq)
+    fq2="${base}_2.fastq"
+    echo "Processing $base"
+
+    # Align paired reads
+    hisat2 -x $MMARINUM_INDEX -1 "$fq1" -2 "$fq2" -S "${base}_mmarinum.sam"
+
+    # Convert to sorted BAM
+    samtools view -bS "${base}_mmarinum.sam" | samtools sort -o "${base}_mmarinum_sorted.bam"
+
+    # Extract mapped reads only
+    samtools view -b -F 4 "${base}_mmarinum_sorted.bam" > "${base}_mmarinum_mapped.bam"
+
+    # Convert back to paired FASTQ files
+    samtools fastq -1 "${base}_mmarinum_1.fastq" -2 "${base}_mmarinum_2.fastq" -0 /dev/null -s /dev/null "${base}_mmarinum_mapped.bam"
+
+    # Clean up
+    rm "${base}_mmarinum.sam" "${base}_mmarinum_sorted.bam" "${base}_mmarinum_mapped.bam"
+
+    echo "Finished processing $base"
+done
+
+echo "All paired-end samples processed."
+
+~ End Bash
+
+#Using tools from Transcriptomics module to filter genome.
+
+#HISAT
+Aligns reads to reference genome (Mycobacterium marinum E11).
+
+#samtools
+Filters reads post-alignment (e.g., by quality or mapping status).
+
+#This command builds an index from the reference Mycobacterium marinum E11 genome from NCBI.
+hisat2-build mmarinum_E11.fasta mmarinum
+
+hisat2 -q -x mmarinum -1 second_trim_1.fastq -2 second_trim_2.fastq -S marinum.sam
+
+#Here is the output generated on Terminal from the .sam creation command:
+1040222 reads; of these:
+  1040222 (100.00%) were paired; of these:
+    510036 (49.03%) aligned concordantly 0 times
+    522885 (50.27%) aligned concordantly exactly 1 time
+    7301 (0.70%) aligned concordantly >1 times
+    ----
+    510036 pairs aligned concordantly 0 times; of these:
+      269462 (52.83%) aligned discordantly 1 time
+    ----
+    240574 pairs aligned 0 times concordantly or discordantly; of these:
+      481148 mates make up the pairs; of these:
+        296710 (61.67%) aligned 0 times
+        181349 (37.69%) aligned exactly 1 time
+        3089 (0.64%) aligned >1 times
+85.74% overall alignment rate
+
+#The ~50% concordant alignment in HISAT2 roughly supports Kraken2's 54% classification, indicating about half the reads belong to Mycobacterium.
+
+#This command converts the .sam file to .bam
+samtools view -bS marinum.sam > marinum.bam
+
+#This command was run to convert .bam to fastq files off the Cloud (Cloud issues again).
+mkdir -p ~/Documents/marinum_clean && cp ~/Desktop/marinum.bam ~/Documents/marinum_clean/ && cd ~/Documents/marinum_clean
+
+#This command extracts pair-end reads from .bam file.
+samtools fastq -1 output_1.fastq -2 output_2.fastq -0 /dev/null -s /dev/null -n marinum.bam
+
+#This command moved the folder to the desktop and back on the cloud.
+mv ~/Documents/marinum_clean ~/Desktop/
+
+#This command is for FastQC.
+fastqc output_1.fastq output_2.fastq
+
+#FastQC results showed improved quality with 1,040,222 total sequences for both R1 (118.4 Mbp) and R2 (95 Mbp). Neither R1 nor R2 had sequences flagged as low quality.
+
+#This SPAdes command includes --careful. This is recommended for smaller assemblies to reduce errors from indels and misassemblies.
+spades.py -1 output_1.fastq -2 output_2.fastq -o spadesout --careful
+
+#QUAST
+quast.py spadesout/scaffolds.fasta -o quastspades
+
+#Barrnap
+Barrnap for 16S and 23S rRNA
+barrnap --kingdom bac spadesout/scaffolds.fasta > rRNAsequences.gff
+bedtools getfasta -fi spadesout/scaffolds.fasta -bed rRNAsequences.gff -fo rRNAsequences.fasta
+
+#This command is to extract 23S rRNA.
+grep "23S" rRNAsequences.gff | bedtools getfasta -fi spadesout/scaffolds.fasta -bed - -fo rRNA_23S.fasta
+
+#This alignment worked very well but there was still some contamination with Pseudomonas. A more strict alignment was run.
+
+#Running a more strict .bam. These first commands creates a folder off the cloud and copies .bam into it.
+mkdir -p ~/Desktop/marinum_strict
+cd ~/Desktop/marinum_strict
+cp ~/Desktop/marinum.bam .
+
+#This command applies strict filtering to the .bam file.
+samtools view -b -q 20 -F 4 marinum.bam > marinum_strict.bam
+
+#This command extracts .fastq.
+samtools fastq -1 strict_1.fastq -2 strict_2.fastq -0 /dev/null -s /dev/null -n marinum_strict.bam
+
+# ~50,857 singletons were discarded.
+# ~1.76 million reads processed.
+
+#This command is to move the folder back to the desktop and the cloud.
+cd ~/Desktop
+mv marinum_strict ~/Desktop/marinum_strict_final
+
+#SPAdes assembly performed with --careful.
+#After confirming reduced contamination with SPAdes assembly, BLAST, and Kraken2, ABySS assembly was performed in order to compare assemblies.
+
+#ABySS files then moved into their own folder.
+mkdir abyssout
+mv assembly* abyssout/
+
+#QUAST analysis of SPAdes and ABySS assemblies
+quast.py spadesout/scaffolds.fasta -o quastspades & 
+quast.py abyssout/assembly-scaffolds.fa -o quastabyss &
+
+#SPAdes wins again (no surprise). Larger and fewer contigs.
+
+#Contamination is 1.88% and completeness is 99.99%.
+
+#Installed seqkit in conda environment kraken2
+conda install -c bioconda seqkit
+
+#Extract non-M. marinum contig IDs
+grep -v "Mycobacterium marinum" kraken_hisat2.tabular | cut -f2 > contaminant_contigs.txt
+
+#Filter the assembly
+seqkit grep -v -f contaminant_contigs.txt HiSAT2.fasta > HiSAT2_cleaned.fasta
+
+#Terminal seqkit output message
+[INFO] 47 patterns loaded from file
+
+#seqkit reported loading 47 contaminant IDs.
+
+#Barrnap 16S
+barrnap --kingdom bac HiSAT2_cleaned.fasta > rRNAsequences.gff && \
+bedtools getfasta -fi HiSAT2_cleaned.fasta -bed rRNAsequences.gff -fo rRNAsequences.fasta
+
+#23S
+grep "23S" rRNAsequences.gff > 23S.gff
+bedtools getfasta -fi HiSAT2_cleaned.fasta -bed 23S.gff -fo 23S_rRNA.fasta
+
+#QUAST on seqkit altered assembly.
+quast.py HiSAT2_cleaned.fasta -o quastseqkit
+
+quast.py HiSAT1.fasta -o quasthisat1
+
+#CheckM2 report on seqkit altered assembly.
+99.99% complete and 1.88% contamination.
+QUAST showed no change in assembly. This implies that even though seqkit reported 47 patterns from the Kraken2 report, nothing was actually done to the file. I've decided to run the filtered reads through fastp to remove any low quality areas. After this, if successful and with finals around the corner, I will end the genome clean up quest and finish analysis.
+A screenshot comparing the QUAST reports for the HiSAT2 assembly and the seqkit-filtered version is saved in the screenshots folder. Because seqkit ultimately made no discernible changes to the assembly, the associated output folder will be deleted.
+HiSAT1 will not be used moving forward either, but the .fastq files will be retained and its corresponding QUAST report has been saved in the screenshots folder for reference.ß
+
+#CheckM2 results
+CheckM2 Results
+---------------
+Assembly       Completeness (%)   Contamination (%)
+HiSAT1.fasta   100.00             1.29
+HiSAT2.fasta   99.99              1.88
+
+#QUAST Comparison: HiSAT1 vs HiSAT2
+------------------------------------------------------------
+Metric                      HiSAT1           HiSAT2
+--------------------------  ---------------  ---------------
+# Contigs (>= 0 bp)         1438             1252
+# Contigs (>= 1000 bp)      217              618
+# Contigs (>= 5000 bp)      155              303
+# Contigs (>= 10000 bp)     126              188
+# Contigs (>= 25000 bp)     75               47
+# Contigs (>= 50000 bp)     45               3
+Total Length (>= 0 bp)      6,431,372        5,741,553
+GC Content (%)              65.45            65.59
+N50                         59,711           16,934
+L50                         32               104
+# N's per 100 kbp           26.99            68.01
+Largest Contig              177,270          85,362
+
+#The following is the processing of making a folder off the cloud, copying .fastq over, running fastp, and moving folder back to the desktop and onto the cloud.
+mkdir -p ~/Documents/marinum_fastp_final
+
+mv ~/Desktop/strict_1.fastq ~/Documents/marinum_fastp_final/
+mv ~/Desktop/strict_2.fastq ~/Documents/marinum_fastp_final/
+
+fastp \
+  -i strict_1.fastq \
+  -I strict_2.fastq \
+  -o cleaned_1.fastq \
+  -O cleaned_2.fastq \
+  --disable_adapter_trimming \
+  --cut_tail \
+  --cut_window_size 4 \
+  --cut_mean_quality 15 \
+  --qualified_quality_phred 20 \
+  --length_required 50 \
+  --thread 4 \
+  -h fastp_quality_report.html \
+  -j fastp_quality_report.json
+
+#SPAdes, QUAST, and Barrnap were all performed on this final fastp trim set of reads.
+
+#FastQC was run and reported good quality reads for the second HiSAT alignment. In total, 2 reads were removed due to low quality but the resulting assembly was functionally identical to the HiSAT2 second run.
+
+#Tried extracting Pseudomonas with the P. aeruginosa reference genome, but it was unsuccessful. I had hoped, like Mycobacterium marinum, P. aeruginosa would be able to broadly pull out Pseudomonas but there was 0% alignment. Moving on to next steps.
+
+#With finals approaching and no further gain expected from additional filtering or trimming, the genome cleanup process will conclude here and analysis will proceed with the final fastp SPAdes assembly.
+
+#CheckM2
+CheckM2 report: 99.99% complete and 1.88% contamination.
+
+#CARD results
+RGI Criteria   : Strict (high confidence match to CARD database)
+ARO Term       : RbpA  
+SNP Detection  : protein homolog model  
+AMR Gene Family: RbpA bacterial RNA polymerase-binding protein  
+Drug Class     : rifamycin antibiotic  
+Resistance Mech: antibiotic target protection  
+% Identity     : 91.89%  
+% Ref Length   : 97.37%
+
+#RbpA bacterial RNA polymerase-binding protein	ATGGCTGATCGTGTCCTTAGAGGCAGTCGATTGGGGGCCGTAAGTTACGAAACCGACCGCAACCACGACCTCGCCCCGCGTCAGATTGCTCGGTACCGCACCGAGAACGGCGAAGAGTTCCAGGTGCCGTTCGCCGACGATGCCGAGATTCCCGGCACCTGGCTGTGCAAGAACGGCATGGAAGGCACCCTGATCGAGGGTGATCTGCCGGAGCCGAAGAAGGTCAAGCCGCCGCGCACGCACTGGGACATGCTGCTCGAGCGTCGCTCGGTCGAAGAGCTCGAAGAGCTGCTCAAGGAACGTCTTGACCTGATCCGGTCGCGTCGCCGCGGCTGA
+#Predicted protein	MADRVLRGSRLGAVSYETDRNHDLAPRQIARYRTENGEEFQVPFADDAEIPGTWLCKNGMEGTLIEGDLPEPKKVKPPRTHWDMLLERRSVEELEELLKERLDLIRSRRRG	
+#CARD protein sequence
+MADRVLRGSRLGAVSYETDRNHDLAPRQVARYRTDNGEEFDVPFADDAEIPGTWLCRNGLEGTLIEGDVPEPKKVKPPRTHWDMLLERRSVEELEELLKERLDLIKAKRRGTGS
+
+#Protein sequence to BLAST to confirm relation to Mycobacterium marinum.
+MADRVLRGSRLGAVSYETDRNHDLAPRQVARYRTDNGEEFDVPFADDAEIPGTWLCRNGLEGTLIEGDVPEPKKVKPPRTHWDMLLERRSVEELEELLKERLDLIKAKRRGTGS
+
+#BLASTp result for predicted protein from CARD output.
+Top hit: Mycobacterium
+
+#I installed BLAST in my genomeanalysis environment in order to practice running it through command line.
+conda install -c bioconda blast
+
+#This command runs the rbpA gene downloaded from CARD through BLASTP using NCBI’s remote server.
+blastp -query rbpA.fasta -db nr -remote -out rbpA_blastp.txt -outfmt 6
+
+#The outputs include:
+Default -outfmt 6 columns:
+qseqid – Query sequence ID (input FASTA header, e.g., rbpA_Mmar)
+sseqid – Subject sequence ID (the database hit’s accession number)
+pident – Percent identity between query and subject
+length – Length of the alignment
+evalue – Expect value (likelihood the hit is due to chance; smaller is better)
+bitscore – Alignment bit score (higher = better match)
+
+#BLAST generated a large .txt file.
+
+#The top hits were accession numbers and their identity was obtained through command line with:
+blastdbcmd -db nr -entry ABK74095.1 -outfmt "%T %S"
+
+#T and S
+%T = Taxonomy ID
+%S = Scientific name
+
+#This doesn’t work locally unless the full 'nr' database is downloaded. Because it's larger than the Kraken2 database, which is still living in its 47 GB stasis bubble of abandonment, I'll just google them like a peasant.
+
+#Top hit: Mycolicibacterium smegmatis. Wot wot.
+
+#Like getting Streptococcus and Enterococcus interchangeably in my first genome section report, and Dr. Van Laar telling me they used to be in the same genus, Mycobacterium and Mycolicibacterium were similarly once in the same genus.
+#The second hit on BLASTp is unclassified Mycobacterium.
+
+~ ~ ~ ~ ~ Annotation with DFAST, RAST and Prokka
+
+#Note for annotation: DFAST, RAST, and Prokka via Galaxy EU are all the same. Prokka via command line swapped gyrA and gyrB.
+
+#DFAST genome annotation
+dfast -g spades_final/scaffolds.fasta -o dfast_out
+
+#Prokka installed in its own environment to avoid conflicts with something in genomeanalysis.
+conda create -n annotation -c bioconda -c conda-forge prokka
+
+#For the environment Prokka is in:
+conda activate annotation
+
+#Prokka genome annotation. --prefix marinum sets the name for output files (e.g., marinum.gff, marinum.faa). CPU set to 6 to speed up process. I would have used 10 for funsies but I didn't want my computer to blow up.
+prokka spades_final/scaffolds.fasta --outdir prokka_out --prefix marinum --cpus 6
+
+#Prokka *note: gyrA and gyrB are swapped and RAST was used as a tie breaker.
+
+#Genes found in Prokka through command line: rbpA, dnaA, gyrA, gyrB, and kasA (mycolic acid synthesis).
+grep -i rbpA prokka_out/marinum.*
+grep -i dnaA prokka_out/marinum.*
+grep -iE 'gyrA|gyrB|gyrase' prokka_out/marinum.*
+grep -i kasA prokka_out/marinum.*
+
+#I looked for these with my eyes and not command line in my first genome report WHY
+
+#rbpA
+NODE_123_length_14907_cov_12.886615	Prodigal:002006	CDS	1718	2053
+prokka_out/marinum.tsv:PCHFIHDH_02850	CDS	336	rbpA			RNA polymerase-binding protein RbpA
+
+#dnaA
+NODE_217_length_8459_cov_16.797715	Prodigal:002006	CDS	2911	4467
+prokka_out/marinum.tsv:PCHFIHDH_03817	CDS	1557	dnaA		COG0593Chromosomal replication initiator protein DnaA
+
+#dnaA
+NODE_133_length_14123_cov_15.592622	Prodigal:002006	CDS	11596	13674
+prokka_out/marinum.tsv:PCHFIHDH_02993	CDS	2520	gyrA1	5.6.2.2		DNA gyrase subunit A
+
+#dnaB
+NODE_133_length_14123_cov_15.592622	Prodigal:002006	CDS	9037	11556
+prokka_out/marinum.tsv:PCHFIHDH_02994	CDS	2079	gyrB1	5.6.2.2		DNA gyrase subunit B
+
+#kasA
+NODE_109_length_16600_cov_14.701058	Prodigal:002006	CDS	10235	11485
+prokka_out/marinum.tsv:PCHFIHDH_02657	CDS	1251	kasA	2.3.1.41	COG0304	3-oxoacyl-[acyl-carrier-protein] synthase 1
+
+#DFAST
+
+#Genes found in DFAST output through command line: rbpA, dnaA, gyrA, gyrB, and kasA (mycolic acid synthesis).
+grep -i rbpA genome.gff
+grep -i dnaA genome.gff
+grep sequence0133 genome.gff | awk -F'\t' '$3=="CDS" && $4 >= 11596 && $5 <= 13674'
+grep sequence0133 genome.gff | awk -F'\t' '$3=="CDS" && $4 >= 9037 && $5 <= 11556'
+grep sequence0109 genome.gff | awk -F'\t' '$3=="CDS" && $4 >= 10235 && $5 <= 11485'
+
+#rbpA
+sequence0123	MetaGeneAnnotator	CDS	1718	2053	.	+	0	ID=MGA_2898;product=RNA polymerase-binding protein
+
+#dnaB
+sequence0496	MetaGeneAnnotator	CDS	351	1688	.	-	0	ID=MGA_5043;product=F0F1 ATP synthase subunit B
+
+#dnaB
+sequence0133	MetaGeneAnnotator	CDS	11596	13674	.	-	0	ID=MGA_3039;product=DNA topoisomerase (ATP-hydrolyzing) subunit B
+*Note: this is labeled gyrB not gyrA like Prokka.
+
+#dnaA
+sequence0133	MetaGeneAnnotator	CDS	9037	11556	.	-	0	ID=MGA_3038;product=DNA topoisomerase (ATP-hydrolyzing) subunit A
+*Note: this is labeled gyrA not gyrB like Prokka.
+
+#kasA
+sequence0109	MetaGeneAnnotator	CDS	10235	11485	.	-	0	ID=MGA_2695;product=3-oxoacyl-ACP synthase KasA
+
+#I wasn't planning on uploading another scaffold to RAST for this project, but since the genes are swapped for Prokka and DFAST I think I have to.
+
+#Prokka vs. DFAST gyrA and gyrB
+| Tool     | Gene ID                  | Coordinates     | Strand | Product                                        |
+|----------|--------------------------|-----------------|--------|------------------------------------------------|
+| Prokka   | gyrB1                    | 9037–11556      | +      | DNA gyrase subunit B                           |
+| DFAST    | MGA_3038                 | 9037–11556      | −      | DNA topoisomerase (ATP-hydrolyzing) subunit A  |
+| RAST     | peg.855                  | 9037–11556      | .      | DNA gyrase subunit A (EC 5.99.1.3)             |
+| Prokka   | gyrA1                    | 11596–13674     | +      | DNA gyrase subunit A                           |
+| DFAST    | MGA_3039                 | 11596–13674     | −      | DNA topoisomerase (ATP-hydrolyzing) subunit B  |
+| RAST     | peg.856                  | 11596–13674     | .      | DNA gyrase subunit B (EC 5.99.1.3)             |
+
+#RAST and DFAST are similar while Prokka has the genes swapped. This is interesting and another reason to use multiple bioinformatics tools for analysis.
+
+#Prokka Galaxy EU. These are regular, if that's the correct word, like RAST and DFAST.
+
+#gyrA
+NODE_133_length_14123_cov_15.592622	Prodigal:002006	CDS	9037	11556	.	-	0	ID=PCHFIHDH_02993;eC_number=5.6.2.2;Name=gyrA1;gene=gyrA1;inference=ab initio prediction:Prodigal:002006,similar to AA sequence:UniProtKB:A0A0G2Q9F8;locus_tag=PCHFIHDH_02993;product=DNA gyrase subunit A
+
+#gyrB
+NODE_133_length_14123_cov_15.592622	Prodigal:002006	CDS	11596	13674	.	-	0	ID=PCHFIHDH_02994;eC_number=5.6.2.2;Name=gyrB1;gene=gyrB1;inference=ab initio prediction:Prodigal:002006,similar to AA sequence:UniProtKB:A0A0G2Q9D6;locus_tag=PCHFIHDH_02994;product=DNA gyrase subunit B
+
+~ ~ ~ ~ ~
+
+#FastANI
+echo "mmarinum_E11.fasta" > ref_list.txt && fastANI -q marinum.fasta --rl ref_list.txt -o fastANI.txt
+echo "tuberculosis.fasta" > ref_list.txt && fastANI -q marinum.fasta --rl ref_list.txt -o fastANI.txt
+
+#Mycobacterium marinum assembly vs. Mycobacterium marinum E11 reference genome
+Query:      marinum.fasta
+Reference:  mmarinum_E11.fasta
+ANI:        98.801%
+Fragments:  1509 / 1512 matched
+
+#Mycobacterium marinum assembly vs. Mycobacterium tuberculosis assembly for prior genome section report
+Query:      marinum.fasta
+Reference:  tuberculosis.fasta
+ANI:        80.066%
+Fragments:  778 / 1512 matched
+
+#Mycobacterium tuberculosis assembly for prior genome section report vs. Mycobacterium tuberculosis reference genome
+Query:      tuberculosis.fasta
+Reference:  Mycobacterium_tuberculosis_H37Rv.fasta
+ANI:        99.934%
+Fragments:  1409 / 1418 matched
+
+~ ~ ~ ~ ~ Mycobacterium tuberculosis (first genome section report) CARD
+#As a final side quest, I took a look at my previous genome section report scaffold in CARD. Mycobacterium tuberculosis, untrimmed and unfiltered, matched many Perfect, Strict and complete genes only.
+#Note: Rifamycin resistance for TB was detected by CARD, but since this report focuses on Mycobacterium marinum, it will not be discussed further here. For more details, including CARD results, please refer to my first genome section report in the future when it is redone.
+#I’m now curious whether rifamycin resistance is common across Mycobacterium genomes uploaded to the SRA. I plan to explore this in my free time starting with M. tuberculosis, M. leprae, and others during summer 2025 and beyond.
+
+~ ~ ~ ~ ~ ~ Final results
+
+#CheckM2 Quality Summary
+Step                        | Completeness (%) | Contamination (%)
+---------------------------|------------------|-------------------
+Raw SRA Assembly           | 100.0            | 1.72
+After Trimmomatic          | 99.99            | 1.44
+After fastp                | 100.0            | 1.23
+HiSAT first run            | 100.0            | 1.29
+HiSAT second run (strict)  | 99.99            | 1.88
+
+#Kraken2
+Raw reads: 99.92% Unclassified
+
+#Trimmomatic
+3.43	43508	43508	U	0	unclassified
+95.22	1208629	3584	G	1763	                Mycobacterium
+0.88	11134	36	P	1224	      Pseudomonadota
+
+#Fastp
+0.04	1	1	U	0	unclassified
+54.71	1238	0	G	1763	                Mycobacterium
+44.9	1016	1	P	1224	      Pseudomonadota
+
+#First HiSAT
+3.41	35518	35518	U	0	unclassified
+95.22	990481	3108	G	1763	                Mycobacterium
+0.91	9472	25	P	1224	      Pseudomonadota
+
+#Second HiSAT (strict)
+99.76	1249	0	G	1763	                Mycobacterium
+0.08	1	0	P	1224	      Pseudomonadota
+
+#Kraken2 Taxonomic Summary
+Step                     | Mycobacterium (%) | Pseudomonas (%) | Unclassified (%)
+-------------------------|-------------------|------------------|-------------------
+Raw SRA Reads            | 0.00*             | 0.00*            | 99.92
+After Trimmomatic        | 95.22             | 0.88             | 3.43
+After fastp              | 54.71             | 44.90            | 0.04
+HISAT2 aligned reads     | 95.22             | 0.91             | 3.41
+HISAT2 strict filtered   | 99.76             | 0.08             | 0.00*
+*Category not present in the Kraken2 output file.
+
+#QUAST
+Raw
+Total length (>= 0 bp)      7024447 
+N50                         170539
+
+#Trimmomatic
+Total length (>= 0 bp)      6662919  
+N50                         77685  
+
+#Fastp
+Total length (>= 0 bp)      6405805 
+N50                         59596  
+
+#Final HiSAT
+Total length (>= 0 bp)      5741553  
+N50                         16934  
+
+#QUAST Assembly Statistics
+Step               | Total Length (bp) | N50
+------------------|-------------------|--------
+Raw               | 7,024,447         | 170,539
+Trimmomatic       | 6,662,919         | 77,685
+Fastp             | 6,405,805         | 59,596
+Final HISAT2      | 5,741,553         | 16,934
+
+#At each step (trimming and filtering), the total length decreased and the number of contigs increased. This means the assembly is more fragmented and supports the CheckM2 report of 1.88% for the final filter. Kraken2 and BLAST results improved at every step from barely containing Mycobacterium to almost 100% Mycobacterium. However, the Trimmomatic run should have been the stopping point before filtering.
+
+#I didn't go back and use Kraken2 until the very end of the report. If I had, I might have tossed the fastp reads and tried trimming with Trimmomatic instead. Or I could have skipped it entirely and gone to filtering. Regardless, this was a learning experience and I know now how many types of tools are useful at every step.
+
+~ ~ ~ ~ ~ ~ Phage tail protein RamyA
+
+#This is analysis of the RAST report from the finalized assembly.
+
+Phages, Prophages, Transposable elements, Plasmids (1)
+ └── Phages, Prophages (1)
+     └── Phage tail proteins (1)
+
+#This command found ramyA in the RAST.gff file.
+grep -i 'phage tail' RAST.gff
+
+NODE_1021_length_245_cov_5.184211	FIG	CDS	2	244	.	ID=fig|6666666.1449005.peg.59;Name=Phage tail protein
+
+#This command extracted the sequence for ramyA.
+seqkit grep -r -p 'NODE_1021_length_245_cov_5.184211' final_ass.fasta > phage_tail_contig.fasta
+
+#BLASTn results:
+Mycobacterium marinum M!
+
+#I decided to download the genome for M. marinum M and run FastANI against my assembly, because why not.
+fastANI -q final_ass.fasta -r GCF_000018345.1_ASM1834v1_genomic.fna -o fastani_MmM.txt
+
+#Result
+final_ass.fasta	GCF_000018345.1_ASM1834v1_genomic.fna	99.3252	1505	1512
+This is more closely related to my assembly than the reference genome for the species. That's interesting considering the reference genome was used in the align and filtering step.
+final_ass.fasta	mmarinum_E11.fasta	98.801	1509	1512
+
+#fastANI Results
+Query Genome     | Reference Genome       | ANI (%)  | Matching Fragments / Total
+------------------|-----------------------|----------|-----------------------------
+final_ass.fasta   | ASM1834v1             | 99.33    | 1505 / 1512
+final_ass.fasta   | M. marinum E11        | 98.80    | 1509 / 1512
+
+#I think it's worth noting that the raw assembly had 4 phage regions listed.
+
+Phages, Prophages, Transposable elements, Plasmids (4)
+ └── Phages, Prophages (4)
+     ├── Phage packaging machinery (1)
+     ├── Phage tail proteins (1)
+     └── Phage capsid proteins (2)
+
+~ ~ ~ ~ ~ ~ 23S raw
+
+#This command is to extract the 23S rRNA from the raw reads for analysis with BLASTn.
+barrnap --kingdom bac spadesout/before_rr.fasta > before_rr_23s.gff
+
+bedtools getfasta -fi spadesout/before_rr.fasta \
+-bed before_rr_23s.gff -s -fo before_rr_23s_from_before_rr.fasta
+
+#The assembly for the raw reads was so contaminated that Pseudomonas was even in the BLASTn results for the 23S rRNA extraction file.
+
+#I decided to run fastANI against the Mycobacterium marinum M strain
+
+fastANI -q before_rr.fasta -r mmarinum_E11.fasta -o before_rr_vs_E11.txt
+fastANI -q untrimmed_scaffolds.fasta -r mmarinum_E11.fasta -o untrimmed_vs_E11.txt
+
+fastANI -q before_rr.fasta -r GCF_000018345.1_ASM1834v1_genomic.fna -o before_rr_vs_M.txt
+fastANI -q untrimmed_scaffolds.fasta -r GCF_000018345.1_ASM1834v1_genomic.fna -o untrimmed_vs_M.txt
+
+#fastANI results raw vs. E11 and M
+Query Genome             | Reference Genome       | ANI (%)  | Matching Fragments / Total
+-------------------------|------------------------|----------|-----------------------------
+untrimmed_scaffolds.fasta| ASM1834v1              | 99.14    | 1950 / 2054
+untrimmed_scaffolds.fasta| M. marinum E11         | 98.39    | 1934 / 2054
+
+~ ~ ~ ~ ~ ~ Encore
+
+#The final programs used were Proksee and SWISS-TOOLS through their live websites. I used Proksee to visualize the 23S rRNA contig with GC content and GC skew. SWISS-TOOLS was used to generate a 3D model of the rbpA gene for this organism from the predicted protein sequence above. Proksee was originally in the slides for my presentation, but it's now the RAST SEED Viewer of functional genes and the SWISS-TOOLS 3D rpbA gene.
+
+~ ~ ~ ~ ~ Final note
+
+#Although CheckM2 reported increased read contamination after filtering, organism-level contamination was reduced as supported by Kraken2, BLAST, and FastANI comparisons.
+
+#This final section report is dedicated to my cat, Mogwai. Mogwai, who tried to jump on my lap many times while I was literally holding my laptop. Thanks Mogs.
+Like M. marinum, M. moffett also likes to maim fish and humans. 🐾
+5/12/2025
+-HM

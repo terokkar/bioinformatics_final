@@ -1,0 +1,25 @@
+All statistics are based on contigs of size >= 500 bp, unless otherwise noted (e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs).
+
+Assembly                    trimmomatic_scaffolds
+# contigs (>= 0 bp)         2263                 
+# contigs (>= 1000 bp)      201                  
+# contigs (>= 5000 bp)      137                  
+# contigs (>= 10000 bp)     115                  
+# contigs (>= 25000 bp)     71                   
+# contigs (>= 50000 bp)     46                   
+Total length (>= 0 bp)      6662919              
+Total length (>= 1000 bp)   6209980              
+Total length (>= 5000 bp)   6062130              
+Total length (>= 10000 bp)  5901465              
+Total length (>= 25000 bp)  5192946              
+Total length (>= 50000 bp)  4321301              
+# contigs                   280                  
+Largest contig              246543               
+Total length                6263367              
+GC (%)                      65.54                
+N50                         77685                
+N90                         15782                
+auN                         86006.1              
+L50                         27                   
+L90                         94                   
+# N's per 100 kbp           35.27                

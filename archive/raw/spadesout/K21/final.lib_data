@@ -1,0 +1,38 @@
+Ì---
+max read length: 151
+nomerge max read length: 151
+average read length: 126.972
+average coverage: 51.5687
+libraries:
+  - type:            paired-end
+    number:          1
+    orientation:     fr
+    left reads:
+      - '/Users/weeblesthe2nd/Desktop/M_marinum/spadesout/corrected/SRR32309086_100.0_0.cor.fastq.gz'
+    right reads:
+      - '/Users/weeblesthe2nd/Desktop/M_marinum/spadesout/corrected/SRR32309086_200.0_0.cor.fastq.gz'
+    single reads:
+      - '/Users/weeblesthe2nd/Desktop/M_marinum/spadesout/corrected/SRR32309086__unpaired00.0_0.cor.fastq.gz'
+    data:
+      unmerged read length: 151
+      merged read length: 0
+      insert size mean: 0
+      insert size deviation: 0
+      insert size left quantile: 0
+      insert size right quantile: 0
+      insert size median: 0
+      insert size mad: 0
+      insert size distribution: {  }
+      pi threshold:    0
+      binary reads info:
+        binary converted: true
+        bin reads info file: '/Users/weeblesthe2nd/Desktop/M_marinum/spadesout/.bin_reads/INFO_0'
+        paired read prefix: '/Users/weeblesthe2nd/Desktop/M_marinum/spadesout/.bin_reads/paired_0'
+        merged read prefix: '/Users/weeblesthe2nd/Desktop/M_marinum/spadesout/.bin_reads/merged_0'
+        single read prefix: '/Users/weeblesthe2nd/Desktop/M_marinum/spadesout/.bin_reads/single_0'
+        chunk num:       10
+      single reads mapped: false
+      library index:   0
+      number of reads: 3552976
+      total nucleotides: 451128541
+...

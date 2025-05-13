@@ -1,0 +1,12 @@
+TrimmomaticPE: Started with arguments:
+ -threads 4 SRR32309086_1.fastq SRR32309086_2.fastq SRR32309086_1_paired.fastq SRR32309086_1_unpaired.fastq SRR32309086_2_paired.fastq SRR32309086_2_unpaired.fastq ILLUMINACLIP:TruSeq3-PE.fa:2:30:10 HEADCROP:20 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:20 MINLEN:50
+Using PrefixPair: 'AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC' and 'AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT'
+Using Long Clipping Sequence: 'GTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT'
+Using Long Clipping Sequence: 'AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC'
+Using Long Clipping Sequence: 'ACACTCTTTCCCTACACGACGCTCTTCCGATCT'
+Using Long Clipping Sequence: 'AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT'
+Skipping duplicate Clipping Sequence: 'AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC'
+ILLUMINACLIP: Using 1 prefix pairs, 4 forward/reverse sequences, 0 forward only sequences, 0 reverse only sequences
+Quality encoding detected as phred33
+Input Read Pairs: 1798029 Both Surviving: 1269245 (70.59%) Forward Only Surviving: 234459 (13.04%) Reverse Only Surviving: 40420 (2.25%) Dropped: 253905 (14.12%)
+TrimmomaticPE: Completed successfully

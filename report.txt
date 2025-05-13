@@ -51,9 +51,6 @@ Date         | Name                 | Num Contigs | Size (bp) | Assembly Version
 
 #Note: although CheckM2 reported increased read contamination after filtering, organism-level contamination was reduced as supported by data above. Additional comparisons done on raw assembly and final assembly are at the bottom of this report.
 
-#Data availability
-#All raw and processed files not used in the final analysis, including intermediate outputs and annotation results, are saved in the archive folder.
-
 ~ ~ ~ ~ ~ Begin section report
 
 #Versions
@@ -183,7 +180,7 @@ mv rRNAs* rRNAinfo/
 #It should be noted that these were the top hits within their node results, but there were many other species present.
 
 #Because of the contamination seen in the BLASTn results, CheckM2 was run via Galaxy EU on the assembly generated from raw reads.
-#I initially attempted to install and run CheckM2 locally through Terminal, but was unsuccessful.
+#I initially attempted to install and run CheckM2 locally through Terminal, but this was unsuccessful.
 #Completeness was reported at 100%, and contamination at 1.72%.
 
 #Later analysis of raw assembly:
@@ -301,9 +298,7 @@ trimmomatic PE \
 
 #SPAdes wins.
 
-#CheckM2 installation was attempted through Terminal, but it requires Python 3.10 and my system is running Python 3.13. I tried to install it in its own environment but this didn't work.
-#I ran into the same compatibility issue during my first genome section report but had forgotten.
-#To compare genome quality between my original untrimmed and trimmed SPAdes assemblies, I’ll use Galaxy EU to run CheckM2 instead.
+#To compare genome quality between my original untrimmed and trimmed SPAdes assemblies, I’ll use Galaxy EU to run CheckM2.
 
 #CheckM2 completeness for assembled Trimmomatic trimmed reads was 99.99%. Contamination for assembled Trimmomatic reads was 1.44%.
 
@@ -351,7 +346,7 @@ Identifiers start with @ in .fastq files and help programs maintain the read str
 
 #The visualizations generated through Python show good quality for forward reads. A small trim near the end to remove lower quality reads will be performed with fastp.
 #Reverse read quality is mostly good, but the quality drops significantly near the tail end. Fastp will be used to trim more of the end from the reverse reads.
-#Because I'm hesitant to trim (post trim stress disorder; thanks microbiome tutorial), I thought forward reads could move forward without it. However, both reads must be run through fastp in order to maintain proper pairing. This is essential for paired-end sequencing and subsequent genome assembly.
+#I thought forward reads could move forward without trimming, however, both reads must be run through fastp in order to maintain proper pairing. This is essential for paired-end sequencing and subsequent genome assembly.
 
 #FastQC was a great starting point for trying out new bioinformatics tools. It gave me a good snapshot of the raw SRA read quality after downloading and helped guide the trimming process. However, the FastQC report wasn’t customizable like the visualizations I generated through Python. In the end, both FastQC and Python complemented each other and helped me reach informed decisions in the analysis process.
 
@@ -404,9 +399,8 @@ mkdir rRNA_test_after_fastq
 mv rRNAsequences.* rRNA_test_after_fastq/
 
 #The good news is that BLASTn with default settings was successful and shows M. marinum for 6/7 nodes. This is an improvement. However, that 7th node is still Pseudomonas.
-Because of this successful run, I'm going to try to install CheckM2 in its own environment to see what the contamination is now after two trims and before Kraken2 and filtering.
 
-#Attempted to install CheckM2 in its own conda environment, as well as through Python later, but it was unsuccessful. Ran CheckM2 through Galaxy Europe to see contamination after additional trimming.
+#Ran CheckM2 through Galaxy Europe to see contamination after additional trimming.
 
 #CheckM2 for fastp trim:
 100% complete
